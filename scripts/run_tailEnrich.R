@@ -35,6 +35,7 @@ n_cores <- suppressWarnings(as.integer(Sys.getenv("TAILENRICH_N_CORES", "1")))
 n_perm_env <- trimws(Sys.getenv("TAILENRICH_N_PERM", unset = ""))
 n_perm <- if (nzchar(n_perm_env)) suppressWarnings(as.integer(n_perm_env)) else NA_integer_
 fdr_cutoff <- suppressWarnings(as.numeric(Sys.getenv("TAILENRICH_FDR_CUTOFF", "0.05")))
+log2fc_cutoff <- suppressWarnings(as.numeric(Sys.getenv("TAILENRICH_LOG2FC_CUTOFF", as.character(log2(1.5)))))
 
 expr_filename <- "gene_TPM_by_salmon_covAdjusted.csv"
 group_filename <- "used_samples_group.tsv"
@@ -112,7 +113,16 @@ resolve_ttailenrich_entry <- function(env, script_path) {
   stop("Cannot resolve TailEnrich entry function from script: ", script_path)
 }
 
-run_tailenrich_one <- function(counts, y, te_fun, seed = 1L, n_cores = 1L, n_perm = NA_integer_, fdr_cutoff = 0.05) {
+run_tailenrich_one <- function(
+  counts,
+  y,
+  te_fun,
+  seed = 1L,
+  n_cores = 1L,
+  n_perm = NA_integer_,
+  fdr_cutoff = 0.05,
+  log2fc_cutoff = log2(1.5)
+) {
   args <- list(X = counts, y = y, seed = seed, n_cores = n_cores)
   if (!is.na(n_perm) && "n_perm" %in% names(formals(te_fun))) {
     args$n_perm <- n_perm
@@ -173,7 +183,14 @@ run_tailenrich_one <- function(counts, y, te_fun, seed = 1L, n_cores = 1L, n_per
   }
   out_df$score <- score
 
-  sig_df <- out_df[is.finite(out_df$FDR) & out_df$FDR < fdr_cutoff, , drop = FALSE]
+  sig_df <- out_df[
+    is.finite(out_df$FDR) &
+      out_df$FDR < fdr_cutoff &
+      is.finite(out_df$log2FC) &
+      abs(out_df$log2FC) >= log2fc_cutoff,
+    ,
+    drop = FALSE
+  ]
   list(full = out_df, sig = sig_df)
 }
 
@@ -206,15 +223,16 @@ for (dataset_name in dataset_dirs) {
   if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
   t0 <- proc.time()[3]
-  res <- run_tailenrich_one(
-    counts = aligned$expr,
-    y = aligned$y,
-    te_fun = te_fun,
-    seed = seed,
-    n_cores = n_cores,
-    n_perm = n_perm,
-    fdr_cutoff = fdr_cutoff
-  )
+    res <- run_tailenrich_one(
+      counts = aligned$expr,
+      y = aligned$y,
+      te_fun = te_fun,
+      seed = seed,
+      n_cores = n_cores,
+      n_perm = n_perm,
+      fdr_cutoff = fdr_cutoff,
+      log2fc_cutoff = log2fc_cutoff
+    )
   t1 <- proc.time()[3]
 
   write.table(res$full, file = file.path(out_dir, "tailEnrich.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
