@@ -1,51 +1,3 @@
-## Method Overview
-
-TailEnrich tests whether disease samples are preferentially enriched at the low-expression or high-expression tail of each gene. For a gene expression matrix $`X \in \mathbb{R}^{m \times n}`$, rows correspond to genes and columns correspond to samples. The sample-label vector is coded as $`y_i = +1`$ for disease samples and $`y_i = -1`$ for control samples.
-
-For each gene, TailEnrich evaluates two ranked directions:
-
-* `L2H`: samples are ranked from low to high expression; this corresponds to left-tail enrichment.
-* `H2L`: samples are ranked from high to low expression; this corresponds to right-tail enrichment.
-
-Within each ranked direction, labels are centered to reduce the effect of group-size imbalance:
-
-```math
-\tilde{y}_i = y_i - \bar{y}, \qquad \bar{y}=\frac{1}{n}\sum_{i=1}^{n}y_i.
-```
-
-For each prefix of the ranked samples, TailEnrich calculates the cumulative enrichment of disease labels:
-
-```math
-H(t)=\frac{\sum_{i=1}^{t}\tilde{y}_i}{\sum_{i=1}^{n}I(\tilde{y}_i>0)\tilde{y}_i}, \qquad 1 \leq t \leq n.
-```
-
-The PE-height is the maximum value of this ranked enrichment curve:
-
-```math
-h = \max_{1 \leq t \leq n} H(t).
-```
-
-Let $`t^*`$ be the first ranked position where the maximum is reached, and let $`x`$ be its normalized position in the ranked sample sequence. The PE-score combines the enrichment height with a positional weight:
-
-```math
-\mathrm{PE} = h(1-x).
-```
-
-This weighting gives larger scores to enrichment peaks that occur closer to the expression tail. TailEnrich computes one PE-score for `L2H` and one for `H2L`, then uses the larger value as the observed statistic for the gene:
-
-```math
-T_j = \max(\mathrm{PE}_{j,\mathrm{L2H}}, \mathrm{PE}_{j,\mathrm{H2L}}).
-```
-
-Statistical significance is estimated by permutation testing. Sample labels are randomly permuted while the expression matrix is kept fixed. For each permutation, TailEnrich recomputes the best PE-score for every gene and pools these permuted scores into a common empirical null distribution. The permutation p-value for gene $`j`$ is calculated as:
-
-```math
-p_j = \frac{\#\{T^{\mathrm{perm}} \geq T_j\}+1}{B \times m + 1},
-```
-
-where $`B`$ is the number of permutations and $`m`$ is the number of genes. The resulting p-values are adjusted across genes using the Benjamini--Hochberg procedure.
-
-
 # TailEnrich
 
 `TailEnrich` is an R implementation for detecting genes with case/control enrichment at expression distribution tails. The repository includes the core method, runnable example scripts, one real-data example dataset, preprocessing code for covariate-adjusted input generation, example output files, and figures used in this README.
@@ -108,38 +60,51 @@ The example dataset is stored under `sample_input/MSBB-BM36/`:
 
 ## Method Overview
 
-TailEnrich tests whether disease samples are preferentially enriched at the low-expression or high-expression tail of each gene. For a gene expression matrix $X \in \mathbb{R}^{m \times n}$, rows correspond to genes and columns correspond to samples. The sample-label vector is coded as $y_i = +1$ for disease samples and $y_i = -1$ for control samples.
+TailEnrich tests whether disease samples are preferentially enriched at the low-expression or high-expression tail of each gene. For a gene expression matrix $`X \in \mathbb{R}^{m \times n}`$, rows correspond to genes and columns correspond to samples. The sample-label vector is coded as $`y_i = +1`$ for disease samples and $`y_i = -1`$ for control samples.
 
 For each gene, TailEnrich evaluates two ranked directions:
 
-- `L2H`: samples are ranked from low to high expression; this corresponds to left-tail enrichment.
-- `H2L`: samples are ranked from high to low expression; this corresponds to right-tail enrichment.
+* `L2H`: samples are ranked from low to high expression; this corresponds to left-tail enrichment.
+* `H2L`: samples are ranked from high to low expression; this corresponds to right-tail enrichment.
 
 Within each ranked direction, labels are centered to reduce the effect of group-size imbalance:
-$$
+
+```math
 \tilde{y}_i = y_i - \bar{y}, \qquad \bar{y}=\frac{1}{n}\sum_{i=1}^{n}y_i.
-$$
+```
+
 For each prefix of the ranked samples, TailEnrich calculates the cumulative enrichment of disease labels:
-$$
+
+```math
 H(t)=\frac{\sum_{i=1}^{t}\tilde{y}_i}{\sum_{i=1}^{n}I(\tilde{y}_i>0)\tilde{y}_i}, \qquad 1 \leq t \leq n.
-$$
+```
+
 The PE-height is the maximum value of this ranked enrichment curve:
-$$
+
+```math
 h = \max_{1 \leq t \leq n} H(t).
-$$
-Let $t^*$ be the first ranked position where the maximum is reached, and let $x$ be its normalized position in the ranked sample sequence. The PE-score combines the enrichment height with a positional weight:
-$$
+```
+
+Let $`t^*`$ be the first ranked position where the maximum is reached, and let $`x`$ be its normalized position in the ranked sample sequence. The PE-score combines the enrichment height with a positional weight:
+
+```math
 \mathrm{PE} = h(1-x).
-$$
+```
+
 This weighting gives larger scores to enrichment peaks that occur closer to the expression tail. TailEnrich computes one PE-score for `L2H` and one for `H2L`, then uses the larger value as the observed statistic for the gene:
-$$
+
+```math
 T_j = \max(\mathrm{PE}_{j,\mathrm{L2H}}, \mathrm{PE}_{j,\mathrm{H2L}}).
-$$
-Statistical significance is estimated by permutation testing. Sample labels are randomly permuted while the expression matrix is kept fixed. For each permutation, TailEnrich recomputes the best PE-score for every gene and pools these permuted scores into a common empirical null distribution. The permutation p-value for gene $j$ is calculated as:
-$$
+```
+
+Statistical significance is estimated by permutation testing. Sample labels are randomly permuted while the expression matrix is kept fixed. For each permutation, TailEnrich recomputes the best PE-score for every gene and pools these permuted scores into a common empirical null distribution. The permutation p-value for gene $`j`$ is calculated as:
+
+```math
 p_j = \frac{\{T^{\mathrm{perm}} \geq T_j\}}{B \times m},
-$$
-where $B$ is the number of permutations and $m$ is the number of genes. The resulting p-values are adjusted across genes using the Benjamini--Hochberg procedure.
+```
+
+where $`B`$ is the number of permutations and $`m`$ is the number of genes. The resulting p-values are adjusted across genes using the Benjamini--Hochberg procedure.
+
 
 ## Quick Start
 
