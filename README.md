@@ -220,6 +220,8 @@ The PE-curve examples were selected from genes that satisfy the following criter
 - non-significant in `edgeR`,
 - selected to show representative tail-enrichment patterns rather than only the smallest FDR values.
 
+Each selected gene is shown in both scan directions: left scan (L2H) and right scan (H2L). Genes annotated as right-tail enriched are identified by the H2L scan, and H2L curves are mirrored horizontally for display.
+
 The exact gene list is stored in `results/selected_genes.tsv`. For display, `H2L` curves are mirrored horizontally so the enriched high-expression tail appears on the right side of the panel.
 
 ![Selected PE curves](figures/MSBB-BM36_selected_pe_curves.png)
