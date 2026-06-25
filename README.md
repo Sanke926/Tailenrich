@@ -116,7 +116,7 @@ In the broader paper workflow, TailEnrich is run on the covariate-adjusted TPM m
 
 ## Bundled Example
 
-The bundled public example uses `MSBB-BM36`, which was chosen because its significant-gene count is closest to the mean TailEnrich count across the 12-dataset benchmark set after excluding the maximum-count dataset.
+The bundled public example uses `MSBB-BM36`.
 
 Bundled input:
 
@@ -162,7 +162,6 @@ Interpretation:
 
 ### Volcano Plot
 
-This volcano plot uses only the bundled `MSBB-BM36` sample dataset.
 Red points satisfy both `TailEnrich FDR < 0.05` and `|log2FC| >= log2(1.5)`.
 Non-significant genes are shown in gray.
 
@@ -177,7 +176,6 @@ These genes were chosen from the same sample dataset under the rule:
 - not chosen simply by top significance rank.
 
 The exact list is stored in `results/selected_genes.tsv`.
-For display, `right` tails are mirrored horizontally so the enriched tail appears on the right side of the panel.
 
 ![Selected PE curves](figures/MSBB-BM36_selected_pe_curves.png)
 
