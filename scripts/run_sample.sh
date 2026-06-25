@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+RSCRIPT_BIN="${RSCRIPT_BIN:-Rscript}"
+
+export TAILENRICH_INPUT_ROOT="${TAILENRICH_INPUT_ROOT:-${ROOT_DIR}/sample_input}"
+export TAILENRICH_OUTPUT_ROOT="${TAILENRICH_OUTPUT_ROOT:-${ROOT_DIR}/sample_output_rerun}"
+export TAILENRICH_DATASETS="${TAILENRICH_DATASETS:-MSBB-BM36}"
+export TAILENRICH_N_CORES="${TAILENRICH_N_CORES:-1}"
+export TAILENRICH_N_PERM="${TAILENRICH_N_PERM:-1000}"
+export TAILENRICH_SEED="${TAILENRICH_SEED:-1}"
+export TAILENRICH_FDR_CUTOFF="${TAILENRICH_FDR_CUTOFF:-0.05}"
+
+echo "Running TailEnrich sample"
+echo "  ROOT_DIR=${ROOT_DIR}"
+echo "  RSCRIPT_BIN=${RSCRIPT_BIN}"
+echo "  TAILENRICH_DATASETS=${TAILENRICH_DATASETS}"
+echo "  TAILENRICH_N_CORES=${TAILENRICH_N_CORES}"
+echo "  TAILENRICH_N_PERM=${TAILENRICH_N_PERM}"
+
+"${RSCRIPT_BIN}" "${ROOT_DIR}/scripts/run_tailEnrich.R"
+
+echo "Sample output written to ${TAILENRICH_OUTPUT_ROOT}/${TAILENRICH_DATASETS}/tailEnrich_output"
