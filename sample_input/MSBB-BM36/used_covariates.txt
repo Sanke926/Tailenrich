@@ -1,5 +1,0 @@
-sex
-race
-ageDeath
-apoeGenotype
-pmi

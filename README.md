@@ -1,255 +1,84 @@
 # TailEnrich
 
-`TailEnrich` is an R implementation for detecting genes with case/control enrichment at expression distribution tails. The repository includes the core method, runnable example scripts, one real-data example dataset, preprocessing code for covariate-adjusted input generation, example output files, and figures used in this README.
+TailEnrich detects whether a subset of disease samples is enriched at either tail of a gene's expression distribution. For each gene, it ranks disease and control samples by expression and evaluates disease-sample enrichment at the low- or high-expression end of the ranking.
 
-## Repository Contents
+## 1. Installation
 
-- `src/tailEnrich.R`: core TailEnrich implementation.
-- `scripts/run_tailEnrich.R`: repository-relative R runner.
-- `scripts/run_sample.sh`: one-command script for running the example dataset.
-- `scripts/prepare_covariate_adjusted_input.R`: covariate-adjustment script for preparing the example input.
-- `scripts/plot_sample_volcano.py`: volcano plot script for the example dataset.
-- `scripts/plot_selected_pe_curves.py`: PE-curve plotting script for selected genes.
-- `sample_input/MSBB-BM36/`: example input dataset.
-- `sample_output/MSBB-BM36/`: TailEnrich output and an `edgeR` reference table.
-- `results/selected_genes.tsv`: genes used in the PE-curve figure.
-- `figures/`: README figures.
-
-## Core Dependencies
-
-### Required to run TailEnrich
-
-- `bash` or `sh`
-- `R >= 4.2`
-- base R `parallel`
-
-The core TailEnrich analysis does not require additional CRAN or Bioconductor packages.
-
-### Optional for rebuilding figures
-
-- `Python >= 3.10`
-- `matplotlib`
-
-## Input Format
-
-Each dataset directory should contain:
-
-1. `gene_TPM_by_salmon_covAdjusted.csv`
-   - first column: gene ID
-   - remaining columns: expression values
-   - header row: sample IDs
-2. `used_samples_group.tsv`
-   - required columns: `sampleID`, `group`
-   - `group` must be coded as `-1` and `1`
-
-For the example dataset, the repository also includes the files used to generate the covariate-adjusted expression matrix:
-
-- `gene_TPM_by_salmon.csv`: raw TPM matrix before covariate removal
-- `MSBB36_control_isoform_covarites.csv`: sample-level covariate table
-- `isoform_sample.txt`: original case/control sample definition
-- `used_covariates.txt`: covariates selected for removal in this dataset
-
-The example dataset is stored under `sample_input/MSBB-BM36/`:
-
-- `sample_input/MSBB-BM36/gene_TPM_by_salmon.csv`
-- `sample_input/MSBB-BM36/gene_TPM_by_salmon_covAdjusted.csv`
-- `sample_input/MSBB-BM36/MSBB36_control_isoform_covarites.csv`
-- `sample_input/MSBB-BM36/isoform_sample.txt`
-- `sample_input/MSBB-BM36/used_covariates.txt`
-- `sample_input/MSBB-BM36/used_samples_group.tsv`
-
-## Method Overview
-
-TailEnrich tests whether disease samples are preferentially enriched at the low-expression or high-expression tail of each gene. For a gene expression matrix $`X \in \mathbb{R}^{m \times n}`$, rows correspond to genes and columns correspond to samples. The sample-label vector is coded as $`y_i = +1`$ for disease samples and $`y_i = -1`$ for control samples.
-
-For each gene, TailEnrich evaluates two ranked directions:
-
-* `L2H`: samples are ranked from low to high expression; this corresponds to left-tail enrichment.
-* `H2L`: samples are ranked from high to low expression; this corresponds to right-tail enrichment.
-
-Within each ranked direction, labels are centered to reduce the effect of group-size imbalance:
-
-```math
-\tilde{y}_i = y_i - \bar{y}, \qquad \bar{y}=\frac{1}{n}\sum_{i=1}^{n}y_i.
-```
-
-For each prefix of the ranked samples, TailEnrich calculates the cumulative enrichment of disease labels:
-
-```math
-H(t)=\frac{\sum_{i=1}^{t}\tilde{y}_i}{\sum_{i=1}^{n}I(\tilde{y}_i>0)\tilde{y}_i}, \qquad 1 \leq t \leq n.
-```
-
-The PE-height is the maximum value of this ranked enrichment curve:
-
-```math
-h = \max_{1 \leq t \leq n} H(t).
-```
-
-Let $`t^*`$ be the first ranked position where the maximum is reached, and let $`x`$ be its normalized position in the ranked sample sequence. The PE-score combines the enrichment height with a positional weight:
-
-```math
-\mathrm{PE} = h(1-x).
-```
-
-This weighting gives larger scores to enrichment peaks that occur closer to the expression tail. TailEnrich computes one PE-score for `L2H` and one for `H2L`, then uses the larger value as the observed statistic for the gene:
-
-```math
-T_j = \max(\mathrm{PE}_{j,\mathrm{L2H}}, \mathrm{PE}_{j,\mathrm{H2L}}).
-```
-
-Statistical significance is estimated by permutation testing. Sample labels are randomly permuted while the expression matrix is kept fixed. For each permutation, TailEnrich recomputes the best PE-score for every gene and pools these permuted scores into a common empirical null distribution. The permutation p-value for gene $`j`$ is calculated as:
-
-```math
-p_j = \frac{\{T^{\mathrm{perm}} \geq T_j\}}{B \times m},
-```
-
-where $`B`$ is the number of permutations and $`m`$ is the number of genes. The resulting p-values are adjusted across genes using the Benjamini--Hochberg procedure.
-
-
-## Quick Start
-
-Run TailEnrich on the example dataset:
-
+Clone the repository in the RStudio Terminal, then set the cloned folder as the R working directory.
 ```bash
-bash scripts/run_sample.sh
+git clone https://github.com/Sanke926/Tailenrich.git
+cd Tailenrich
+```
+TailEnrich uses R base packages and the bundled `parallel` package; no additional packages are required. The example was run with R 4.5.2.
+
+## 2. TailEnrich Input
+
+TailEnrich requires an expression matrix and a corresponding sample group file. The expression matrix is a CSV file with a header: the first column contains unique gene IDs, and the remaining columns contain sample expression values, with unique sample IDs as column names. Expression values must be finite and nonnegative.
+
+The sample group file is a tab-separated TSV file with a header and two required columns: `sampleID` and `group`. Each sample must have one row, where `1` represents disease samples and `-1` represents control samples. Sample IDs must match the expression matrix column names, and both groups must be present.
+
+## 3. Example Usage
+
+### 3.1 Example Input Data
+
+The example uses Mayo temporal cortex (TCX) data with 80 Alzheimer's disease (AD) samples, 69 control samples, and 14,412 genes. Isoform TPM values were summed for each gene to obtain gene expression, and covariate effects were then removed using linear regression. The input files are located under `sample_input/Mayo_TCX/`.
+
+| File | Content |
+| --- | --- |
+| `gene_TPM_covAdjusted.csv` | First column: gene ID; remaining columns: covariate-adjusted gene TPM values |
+| `used_samples_group.tsv` | First column: sample ID (`sampleID`); second column: group (`group`), where `1` represents disease samples and `-1` represents control samples |
+
+### 3.2 Running TailEnrich
+
+In RStudio, set the repository root as the working directory, then read the input files and run TailEnrich:
+
+```r
+source("src/TailEnrich.R")
+input_dir <- "sample_input/Mayo_TCX"
+expression_matrix <- as.matrix(read.csv(file.path(input_dir, "gene_TPM_covAdjusted.csv"),
+                                       row.names = 1, check.names = FALSE))
+groups <- read.delim(file.path(input_dir, "used_samples_group.tsv"))
+sample_groups <- groups$group[match(colnames(expression_matrix), groups$sampleID)]
+
+tailenrich_output <- TailEnrich(expression_matrix, sample_groups, seed = 1)
 ```
 
-If `Rscript` is not available on `PATH`, specify its location:
+See [Function Arguments](docs/api.md) for optional settings such as `n_permutations`, `n_cores`, `fdr_cutoff`, and `log2fc_cutoff`.
 
-```bash
-RSCRIPT_BIN=/path/to/Rscript bash scripts/run_sample.sh
-```
+### 3.3 Results Interpretation
 
-Main environment variables:
+#### Returned Object and Output Files
 
-- `TAILENRICH_INPUT_ROOT`: dataset root, default `sample_input`
-- `TAILENRICH_OUTPUT_ROOT`: output root, default `sample_output_rerun`
-- `TAILENRICH_DATASETS`: comma-separated dataset names, default `MSBB-BM36`
-- `TAILENRICH_N_CORES`: number of cores, default `1`
-- `TAILENRICH_N_PERM`: permutation count, default `1000`
-- `TAILENRICH_SEED`: random seed, default `1`
-- `TAILENRICH_FDR_CUTOFF`: significance cutoff, default `0.05`
+`tailenrich_output` contains one row per gene and the seven columns below. The R object and example result files use the same column names. The example returns 14,412 genes, of which 1,548 satisfy both `fdr < 0.05` and `abs(log2fc) >= log2(1.5)`. These cutoffs can be set with `fdr_cutoff` and `log2fc_cutoff`.
 
-## Preprocessing Workflow
+| Output file | Contents |
+| --- | --- |
+| [tailEnrich_results.tsv](sample_output/Mayo_TCX/tailEnrich_results.tsv) | All 14,412 genes |
+| [tailEnrich_sig.tsv](sample_output/Mayo_TCX/tailEnrich_sig.tsv) | 1,548 genes with `is_significant` set to `TRUE` |
 
-The example dataset uses the following preprocessing steps:
+| Column | Interpretation |
+| --- | --- |
+| `gene_id` | Gene identifier |
+| `direction` | Enrichment direction: `left` or `right` |
+| `enrichment_score` | Enrichment statistic for the selected direction |
+| `log2fc` | Tail-specific log2 fold change |
+| `p_value` | Pooled permutation p value |
+| `fdr` | Benjamini-Hochberg-adjusted p value |
+| `is_significant` | Whether both FDR and absolute log2FC cutoffs are met |
 
-1. Start from the raw TPM matrix `gene_TPM_by_salmon.csv`.
-2. Read the sample-level covariate table `MSBB36_control_isoform_covarites.csv`.
-3. Keep the covariates listed in `used_covariates.txt`.
-4. Use `isoform_sample.txt` to define `exp = 1` and `ctrl = -1`, then write `used_samples_group.tsv`.
-5. Remove covariate effects from the TPM matrix and write `gene_TPM_by_salmon_covAdjusted.csv`.
-6. Run TailEnrich on the covariate-adjusted TPM matrix.
+#### Examples of Left- and Right-Tail Enrichment
 
-The preprocessing step can be reproduced with:
+The following genes illustrate left- and right-tail enrichment. After analyzing the same dataset with edgeR (v4.0.16) as the comparison method, we selected genes that met the TailEnrich significance criteria but were not significant in edgeR (FDR >= 0.05) as examples.
 
-```bash
-Rscript scripts/prepare_covariate_adjusted_input.R \
-  --expr sample_input/MSBB-BM36/gene_TPM_by_salmon.csv \
-  --covariates sample_input/MSBB-BM36/MSBB36_control_isoform_covarites.csv \
-  --sample-file sample_input/MSBB-BM36/isoform_sample.txt \
-  --used-covariates sample_input/MSBB-BM36/used_covariates.txt \
-  --out-expr sample_input/MSBB-BM36/gene_TPM_by_salmon_covAdjusted.csv \
-  --out-groups sample_input/MSBB-BM36/used_samples_group.tsv
-```
+![HSPA1A: left-tail enrichment](figures/HSPA1A.png)
 
-In the full paper workflow, TailEnrich is run on covariate-adjusted TPM matrices. The comparison `edgeR` analysis is run separately on raw count data using a covariate-aware design.
+HSPA1A shows left-tail enrichment (FDR 0.000317; log2FC -1.430), with disease samples accumulating toward the low-expression end. Here, `h_max` marks the maximum normalized cumulative disease-enrichment score, displayed as a percentage, and `d` marks the distance from the low-expression starting tail to that peak. Red and green strips indicate disease and control samples, respectively. 
 
-## Example Dataset
+![CCL2: right-tail enrichment](figures/CCL2.png)
 
-The repository includes one example dataset, `MSBB-BM36`. This dataset was selected because its TailEnrich significant-gene count is close to the mean TailEnrich count across the 12-dataset benchmark set after excluding the maximum-count dataset.
+CCL2 shows right-tail enrichment (FDR 0.0000125; log2FC 1.495), with disease samples accumulating toward the high-expression end. Here, `h_max` marks the maximum normalized cumulative disease-enrichment score, displayed as a percentage, and `d` marks the distance from the high-expression starting tail on the right to that peak. Red and green strips indicate disease and control samples, respectively. 
 
-Example input files:
+## 4. Contact
 
-- `sample_input/MSBB-BM36/gene_TPM_by_salmon.csv`
-- `sample_input/MSBB-BM36/gene_TPM_by_salmon_covAdjusted.csv`
-- `sample_input/MSBB-BM36/MSBB36_control_isoform_covarites.csv`
-- `sample_input/MSBB-BM36/isoform_sample.txt`
-- `sample_input/MSBB-BM36/used_covariates.txt`
-- `sample_input/MSBB-BM36/used_samples_group.tsv`
-
-Example output files:
-
-- `sample_output/MSBB-BM36/tailEnrich.tsv`
-- `sample_output/MSBB-BM36/tailEnrich_sig.tsv`
-- `sample_output/MSBB-BM36/edgeR.tsv`
-
-In this dataset:
-
-- TailEnrich significant genes: `253`
-- `edgeR` significant genes: `1445`
-- selected PE-curve examples: genes significant in TailEnrich but not significant in `edgeR`
-
-## Output Columns
-
-The main TailEnrich result table includes:
-
-- `gene_id`
-- `log2FC`
-- `PValue`
-- `FDR`
-- `PE_L2H`, `PE_H2L`
-- `PeakH_L2H`, `PeakH_H2L`
-- `PeakX_L2H`, `PeakX_H2L`
-- `direction_best`
-- `TE_score_any`
-- `score`
-
-Interpretation:
-
-- `L2H` denotes the low-to-high ranking direction and corresponds to low-expression tail enrichment.
-- `H2L` denotes the high-to-low ranking direction and corresponds to high-expression tail enrichment.
-- `direction_best` records the ranking direction with the larger PE-score.
-- `log2FC` is the direction-specific tail fold change.
-- `PValue` and `FDR` summarize permutation-based significance.
-- `score` is `-log10(PValue)` and is provided for ranking and visualization.
-
-## Figures
-
-### Volcano Plot
-
-This volcano plot uses only the `MSBB-BM36` example dataset. Red points satisfy both `TailEnrich FDR < 0.05` and `|log2FC| >= log2(1.5)`. Non-significant genes are shown in gray.
-
-![MSBB-BM36 volcano plot](figures/MSBB-BM36_volcano.png)
-
-### Annotated PE Curves
-
-The PE-curve examples were selected from genes that satisfy the following criteria:
-
-- significant in TailEnrich,
-- non-significant in `edgeR`,
-- selected to show representative tail-enrichment patterns rather than only the smallest FDR values.
-
-Each selected gene is shown in both scan directions: left scan (L2H) and right scan (H2L). Genes annotated as right-tail enriched are identified by the H2L scan, and H2L curves are mirrored horizontally for display.
-
-The exact gene list is stored in `results/selected_genes.tsv`. For display, `H2L` curves are mirrored horizontally so the enriched high-expression tail appears on the right side of the panel.
-
-![Selected PE curves](figures/MSBB-BM36_selected_pe_curves.png)
-
-## Results and Interpretation
-
-In the `MSBB-BM36` example dataset, TailEnrich identifies `253` significant genes. The included `edgeR` reference table identifies `1445` significant genes under the corresponding comparison workflow.
-
-The selected PE curves highlight genes that are significant in TailEnrich but not significant in `edgeR`. These examples illustrate tail-structured case/control differences that may not appear as standard mean-shift differential expression signals.
-
-These results support the intended use of TailEnrich as a complementary analysis to conventional differential expression methods. TailEnrich is designed to detect subgroup-level enrichment at expression tails rather than to replace global-shift differential expression analysis.
-
-## Rebuild Figures
-
-```bash
-python scripts/plot_sample_volcano.py
-python scripts/plot_selected_pe_curves.py
-```
-
-## Directory Layout
-
-```text
-TailEnrich_github_repo/
-|- README.md
-|- figures/
-|- results/
-|- sample_input/
-|- sample_output/
-|- scripts/
-`- src/
-```
+- Yu-He Liu: [244712162@csu.edu.cn](mailto:244712162@csu.edu.cn)
+- Hong-Dong Li: [hongdong@csu.edu.cn](mailto:hongdong@csu.edu.cn)
