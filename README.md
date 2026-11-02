@@ -1,6 +1,6 @@
 # TailEnrich
 
-TailEnrich detects whether a subset of disease samples is enriched at either tail of a gene's expression distribution. For each gene, it ranks disease and control samples by expression and evaluates disease-sample enrichment at the low- or high-expression end of the ranking.
+TailEnrich detects whether a subset of disease samples is enriched at the lower or upper tail of a gene's expression distribution. For each gene, it ranks disease and control samples by expression level and evaluates disease-sample enrichment at the low- or high-expression end of the ranking.
 
 ## 1. Installation
 
