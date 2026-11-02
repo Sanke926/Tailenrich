@@ -15,7 +15,7 @@ TailEnrich uses R base packages and the bundled `parallel` package; no additiona
 
 TailEnrich requires an expression matrix and a corresponding sample group file. The expression matrix is a CSV file with a header: the first column contains unique gene IDs, and the remaining columns contain sample expression values, with unique sample IDs as column names. Expression values must be finite and nonnegative.
 
-The sample group file is a tab-separated TSV file with a header and two required columns: `sampleID` and `group`. Each sample must have one row, where `1` represents disease samples and `-1` represents control samples. Sample IDs must match the expression matrix column names, and both groups must be present.
+The sample group file is a TSV file with a header and two required columns: `sampleID` and `group`. Each sample must have one row, where `1` represents disease samples and `-1` represents control samples. Sample IDs must match the expression matrix column names, and both groups must be present.
 
 ## 3. Example Usage
 
@@ -72,11 +72,11 @@ The following genes illustrate left- and right-tail enrichment. After analyzing 
 
 ![HSPA1A: left-tail enrichment](figures/HSPA1A.png)
 
-HSPA1A shows left-tail enrichment (FDR 0.000317; log2FC -1.430), with disease samples accumulating toward the low-expression end. Here, `h_max` marks the maximum normalized cumulative disease-enrichment score, displayed as a percentage, and `d` marks the distance from the low-expression starting tail to that peak. Red and green strips indicate disease and control samples, respectively. 
+HSPA1A shows left-tail enrichment (FDR 0.000317; log2FC -1.430), with disease samples accumulating toward the low-expression end. Here, `h_max` marks the maximum percentage of enriched disease samples, and `d` marks the distance from the low-expression tail to that peak. Red and green strips indicate disease and control samples, respectively. 
 
 ![CCL2: right-tail enrichment](figures/CCL2.png)
 
-CCL2 shows right-tail enrichment (FDR 0.0000125; log2FC 1.495), with disease samples accumulating toward the high-expression end. Here, `h_max` marks the maximum normalized cumulative disease-enrichment score, displayed as a percentage, and `d` marks the distance from the high-expression starting tail on the right to that peak. Red and green strips indicate disease and control samples, respectively. 
+CCL2 shows right-tail enrichment (FDR 0.0000125; log2FC 1.495), with disease samples accumulating toward the high-expression end. Here, `h_max` marks the maximum percentage of enriched disease samples, and `d` marks the distance from the high-expression tail on the right to that peak. Red and green strips indicate disease and control samples, respectively. 
 
 ## 4. Contact
 
