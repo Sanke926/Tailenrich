@@ -53,8 +53,8 @@ See [Function Arguments](docs/api.md) for optional settings such as `n_permutati
 
 | Output file | Contents |
 | --- | --- |
-| [tailEnrich_results.tsv](sample_output/Mayo_TCX/tailEnrich_results.tsv) | All 14,412 genes |
-| [tailEnrich_sig.tsv](sample_output/Mayo_TCX/tailEnrich_sig.tsv) | 1,548 genes with `is_significant` set to `TRUE` |
+| [tailEnrich_results.tsv](sample_output/Mayo_TCX/tailEnrich_results.tsv) | Results for all genes |
+| [tailEnrich_sig.tsv](sample_output/Mayo_TCX/tailEnrich_sig.tsv) | Results for significant genes |
 
 | Column | Interpretation |
 | --- | --- |
