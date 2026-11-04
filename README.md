@@ -5,10 +5,12 @@ TailEnrich detects whether a subset of disease samples is enriched at the lower 
 ## 1. Installation
 
 Clone the repository in the RStudio Terminal, then set the cloned folder as the R working directory.
+
 ```bash
 git clone https://github.com/Sanke926/Tailenrich.git
 cd Tailenrich
 ```
+
 TailEnrich uses R base packages and the bundled `parallel` package; no additional packages are required. The example was run with R 4.5.2.
 
 ## 2. TailEnrich Input
@@ -49,34 +51,29 @@ See [Function Arguments](docs/api.md) for optional settings such as `n_permutati
 
 #### Returned Object and Output Files
 
-`tailenrich_output` contains one row per gene and the seven columns below. The R object and example result files use the same column names. The example returns 14,412 genes, of which 1,548 satisfy both `fdr < 0.05` and `abs(log2fc) >= log2(1.5)`. These cutoffs can be set with `fdr_cutoff` and `log2fc_cutoff`.
-
-| Output file | Contents |
-| --- | --- |
-| [tailEnrich_results.tsv](sample_output/Mayo_TCX/tailEnrich_results.tsv) | Results for all genes |
-| [tailEnrich_sig.tsv](sample_output/Mayo_TCX/tailEnrich_sig.tsv) | Results for significant genes |
+`tailenrich_output` contains one row per gene with the seven columns listed below. By default, genes are considered significant when both `fdr < 0.05` and `abs(log2fc) >= log2(1.5)` are satisfied. These thresholds can be customized through `fdr_cutoff` and `log2fc_cutoff` when calling `TailEnrich()`.
 
 | Column | Interpretation |
 | --- | --- |
-| `gene_id` | Gene identifier |
+| `gene_id` | Gene ID |
 | `direction` | Enrichment direction: `left` or `right` |
-| `enrichment_score` | Enrichment statistic for the selected direction |
+| `enrichment_score` | PE score for the selected enrichment direction |
 | `log2fc` | Tail-specific log2 fold change |
 | `p_value` | Pooled permutation p value |
-| `fdr` | Benjamini-Hochberg-adjusted p value |
+| `fdr` | adjusted p value |
 | `is_significant` | Whether both FDR and absolute log2FC cutoffs are met |
 
 #### Examples of Left- and Right-Tail Enrichment
 
-The following genes illustrate left- and right-tail enrichment. After analyzing the same dataset with edgeR (v4.0.16) as the comparison method, we selected genes that met the TailEnrich significance criteria but were not significant in edgeR (FDR >= 0.05) as examples.
+The following genes illustrate left- and right-tail enrichment. After analyzing the same dataset with edgeR (v4.0.16) as the comparison method, we selected genes identified as significant by TailEnrich but not by edgeR (FDR >= 0.05) as examples.
 
-![HSPA1A: left-tail enrichment](figures/HSPA1A.png)
+<img src="figures/HSPA1A.png" alt="HSPA1A: left-tail enrichment" width="600">
 
-HSPA1A shows left-tail enrichment (FDR 0.000317; log2FC -1.430), with disease samples accumulating toward the low-expression end. Here, `h_max` marks the maximum percentage of enriched disease samples, and `d` marks the distance from the low-expression tail to that peak. Red and green strips indicate disease and control samples, respectively. 
+HSPA1A shows left-tail enrichment (FDR = 3.17e-4; log2FC = -1.430), with disease samples accumulating toward the low-expression end. Here, `h_max` marks the maximum percentage of enriched disease samples, and `d` marks the distance from the low-expression tail to that peak. Red and green strips indicate disease and control samples, respectively. 
 
-![CCL2: right-tail enrichment](figures/CCL2.png)
+<img src="figures/CCL2.png" alt="CCL2: right-tail enrichment" width="600">
 
-CCL2 shows right-tail enrichment (FDR 0.0000125; log2FC 1.495), with disease samples accumulating toward the high-expression end. Here, `h_max` marks the maximum percentage of enriched disease samples, and `d` marks the distance from the high-expression tail on the right to that peak. Red and green strips indicate disease and control samples, respectively. 
+CCL2 shows right-tail enrichment (FDR = 1.25e-5; log2FC = 1.495), with disease samples accumulating toward the high-expression end. Here, `h_max` marks the maximum percentage of enriched disease samples, and `d` marks the distance from the high-expression tail on the right to that peak. Red and green strips indicate disease and control samples, respectively.
 
 ## 4. Contact
 
